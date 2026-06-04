@@ -1,0 +1,22 @@
+name: Validate APT Repository
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check shell script syntax
+        run: |
+          bash -n scripts/*.sh install.sh
+
+      - name: Validate APT repository structure
+        run: |
+          ./scripts/validate-apt-repo.sh

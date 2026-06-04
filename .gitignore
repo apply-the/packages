@@ -1,0 +1,13 @@
+# Mac OS
+.DS_Store
+
+# APT Repository Private Keys (NEVER COMMIT)
+apt-repo-private.asc
+
+# IDE / Editors
+.vscode/
+.idea/
+*.swp
+
+# Note: We do NOT ignore .deb files or APT metadata (Packages, Release, etc.) 
+# because they must be committed to this repository to be served by GitHub Pages.
