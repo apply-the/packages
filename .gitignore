@@ -11,3 +11,7 @@ apt-repo-private.asc
 
 # Note: We do NOT ignore .deb files or APT metadata (Packages, Release, etc.) 
 # because they must be committed to this repository to be served by GitHub Pages.
+apt-repo-private.asc
+*.private.asc
+*.secret.asc
+*.gpg.private
