@@ -2,18 +2,98 @@ name: Rebuild APT Repository
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [publish-deb]
 
 permissions:
   contents: write
 
+concurrency:
+  group: "apt-repository"
+  cancel-in-progress: false
+
 jobs:
   rebuild:
+    name: Rebuild and sign APT repository
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Install APT metadata tools
-        run: sudo apt-get update && sudo apt-get install -y dpkg-dev gnupg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev gnupg jq curl
+
+      - name: Write public GPG key
+        env:
+          APT_GPG_PUBLIC_KEY: ${{ secrets.APT_GPG_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${APT_GPG_PUBLIC_KEY:-}" ]; then
+            echo "APT_GPG_PUBLIC_KEY is required." >&2
+            exit 1
+          fi
+
+          mkdir -p apt
+          printf '%s\n' "$APT_GPG_PUBLIC_KEY" > apt/gpg.key
+
+      - name: Download incoming Debian packages
+        if: github.event_name == 'repository_dispatch'
+        env:
+          PACKAGE_NAME: ${{ github.event.client_payload.package }}
+          VERSION: ${{ github.event.client_payload.version }}
+          DEB_URLS_JSON: ${{ toJson(github.event.client_payload.deb_urls) }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${PACKAGE_NAME:-}" ]; then
+            echo "client_payload.package is required." >&2
+            exit 1
+          fi
+
+          if [ -z "${DEB_URLS_JSON:-}" ] || [ "$DEB_URLS_JSON" = "null" ]; then
+            echo "client_payload.deb_urls is required and must be an array." >&2
+            exit 1
+          fi
+
+          case "$PACKAGE_NAME" in
+            boundline)
+              target_dir="apt/pool/main/b/boundline"
+              ;;
+            canon)
+              target_dir="apt/pool/main/c/canon"
+              ;;
+            *)
+              echo "Unsupported package: $PACKAGE_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+          mkdir -p "$target_dir"
+
+          echo "$DEB_URLS_JSON" | jq -r '.[]' | while read -r deb_url; do
+            if [ -z "$deb_url" ] || [ "$deb_url" = "null" ]; then
+              echo "Invalid deb URL in payload." >&2
+              exit 1
+            fi
+
+            filename="$(basename "$deb_url")"
+
+            case "$filename" in
+              *.deb)
+                ;;
+              *)
+                echo "Downloaded asset must be a .deb file: $filename" >&2
+                exit 1
+                ;;
+            esac
+
+            echo "Downloading $deb_url -> $target_dir/$filename"
+            curl -fsSL "$deb_url" -o "$target_dir/$filename"
+          done
 
       - name: Rebuild APT metadata
         env:
@@ -24,10 +104,18 @@ jobs:
       - name: Validate APT repository
         run: ./scripts/validate-apt-repo.sh
 
-      - name: Commit rebuilt metadata
+      - name: Commit rebuilt APT repository
         run: |
+          set -euo pipefail
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add apt/dists apt/gpg.key
-          git diff --cached --quiet || git commit -m "Rebuild APT repository metadata"
-          git push
+
+          git add apt/pool apt/dists apt/gpg.key
+
+          if git diff --cached --quiet; then
+            echo "No APT repository changes to commit."
+          else
+            git commit -m "Rebuild APT repository metadata"
+            git push
+          fi

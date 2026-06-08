@@ -1,34 +1,34 @@
 # Apply The Packages
 
-This repository serves as the static APT package repository for Apply The open-source CLI packages, primarily `boundline` and `canon`. It is hosted on GitHub Pages at `https://apply-the.github.io/packages/apt`.
+This repository hosts the static APT repository for Apply The CLI packages, including `boundline` and `canon`.
 
-> [!NOTE]
-> **Bootstrap Mode**: This repository is currently in bootstrap mode. There are no `.deb` files yet. Running `sudo apt install boundline` will work only after the first package release publishes `.deb` files and rebuilds the APT metadata.
+The repository is published through GitHub Pages and served from:
 
-## User Installation
+```text
+https://apply-the.github.io/packages/apt
+```
 
-You can configure the APT repository manually or use our provided install script.
+## Installation
 
-### Using the Install Script
+### Configure the repository only
 
-To configure the repository:
 ```bash
 curl -fsSL https://apply-the.github.io/packages/install.sh | sh
 ```
 
-To configure the repository and install `boundline`:
+### Configure the repository and install `boundline`
+
 ```bash
 curl -fsSL https://apply-the.github.io/packages/install.sh | sh -s -- boundline
 ```
 
-To configure the repository and install both `boundline` and `canon`:
+### Configure the repository and install `canon`
+
 ```bash
-curl -fsSL https://apply-the.github.io/packages/install.sh | sh -s -- boundline canon
+curl -fsSL https://apply-the.github.io/packages/install.sh | sh -s -- canon
 ```
 
-### Manual Installation
-
-To install the Apply The APT repository manually, run:
+### Manual setup
 
 ```bash
 curl -fsSL https://apply-the.github.io/packages/apt/gpg.key \
@@ -41,82 +41,307 @@ sudo apt update
 sudo apt install boundline
 ```
 
-And for `canon`:
+To install `canon`:
+
 ```bash
 sudo apt install canon
 ```
 
+## Repository Layout
+
+```text
+apt/
+├── gpg.key
+├── dists/
+│   └── stable/
+│       ├── InRelease
+│       ├── Release
+│       ├── Release.gpg
+│       └── main/
+│           ├── binary-amd64/
+│           │   ├── Packages
+│           │   └── Packages.gz
+│           └── binary-arm64/
+│               ├── Packages
+│               └── Packages.gz
+└── pool/
+    └── main/
+        ├── b/
+        │   └── boundline/
+        └── c/
+            └── canon/
+```
+
+APT clients do not install packages directly from `.deb` files in `apt/pool/`.
+
+APT reads the signed repository metadata under:
+
+```text
+apt/dists/stable/
+```
+
+The `pool/` directory stores package files. The `dists/` directory tells APT which packages exist, where they are, which architectures are available, and which checksums are expected.
+
 ## Maintainer Guide
 
-### Generating Metadata Approach
+### Publishing model
 
-This repository uses `dpkg-scanpackages` and a script to manually generate the `Release` file, followed by standard GPG signing. This method was chosen because it is simple, fully transparent, and heavily integrates with GitHub Actions without the need for complex, stateful tools like `reprepro`.
+`apply-the/packages` is the only repository responsible for publishing the APT repository.
 
-### Publishing Packages
+Producer repositories such as `apply-the/boundline` and `apply-the/canon` must not rebuild, sign, or push APT metadata directly.
 
-The release workflows in the `boundline` and `canon` repositories should automatically push `.deb` files here. They need to:
-1. Checkout this repository.
-2. Copy the `.deb` files into the appropriate pool directory:
-   - `apt/pool/main/b/boundline/`
-   - `apt/pool/main/c/canon/`
-3. Run `./scripts/rebuild-apt-repo.sh` to generate the new metadata.
-4. Commit the changes and push to `main`. 
-5. The GitHub Pages workflow in this repository will automatically deploy the updated repository.
+The intended publishing flow is:
 
-### Rebuilding metadata locally
+```text
+boundline/canon release workflow
+→ build .deb assets
+→ attach .deb files to the producer GitHub Release
+→ trigger repository_dispatch on apply-the/packages
 
-To rebuild the APT metadata manually:
-```bash
-./scripts/rebuild-apt-repo.sh
+apply-the/packages
+→ download incoming .deb files
+→ copy them into apt/pool
+→ rebuild APT metadata
+→ sign Release metadata
+→ validate repository structure
+→ commit apt/pool, apt/dists, and apt/gpg.key
+→ deploy through GitHub Pages
 ```
-*Note: If packages are present, you will need the GPG key available and the `APT_GPG_PRIVATE_KEY` and `APT_GPG_PASSPHRASE` environment variables set to sign the new metadata.*
 
-### Validating the repository locally
+This keeps the GPG signing key only in the `apply-the/packages` repository.
 
-To validate the structure and configuration of the repository, run:
+### Rebuild APT metadata
+
+Whenever `.deb` files are added, removed, or replaced under `apt/pool/`, the APT metadata must be rebuilt and signed.
+
+Use the manual GitHub Actions workflow:
+
+```text
+Actions -> Rebuild APT Repository -> Run workflow
+```
+
+Or run locally:
+
+```bash
+export APT_GPG_PRIVATE_KEY="$(cat /path/to/apt-repo-private.asc)"
+export APT_GPG_PASSPHRASE="..."
+
+./scripts/rebuild-apt-repo.sh
+./scripts/validate-apt-repo.sh
+```
+
+Then commit the generated metadata:
+
+```bash
+git add apt/pool apt/dists apt/gpg.key
+git commit -m "Rebuild APT repository metadata"
+git push
+```
+
+### Required GitHub Secrets
+
+The `apply-the/packages` repository requires these GitHub Actions secrets:
+
+| Secret | Purpose |
+|---|---|
+| `APT_GPG_PUBLIC_KEY` | Public signing key written to `apt/gpg.key` |
+| `APT_GPG_PRIVATE_KEY` | Armored private key used to sign APT `Release` metadata |
+| `APT_GPG_PASSPHRASE` | Passphrase for the private key |
+
+Producer repositories require a token that can dispatch publication requests to `apply-the/packages`:
+
+| Repository | Secret | Purpose |
+|---|---|---|
+| `apply-the/boundline` | `PACKAGES_REPO_TOKEN` | Calls `repository_dispatch` on `apply-the/packages` |
+| `apply-the/canon` | `PACKAGES_REPO_TOKEN` | Calls `repository_dispatch` on `apply-the/packages` |
+
+The token must be allowed to call:
+
+```text
+POST /repos/apply-the/packages/dispatches
+```
+
+### Required GitHub Pages Setting
+
+Set GitHub Pages to deploy from GitHub Actions:
+
+```text
+Settings -> Pages -> Build and deployment -> Source: GitHub Actions
+```
+
+### Release Publishing Contract
+
+A valid APT publication updates both package files and repository metadata.
+
+A valid publication may change:
+
+```text
+apt/pool/**/*.deb
+apt/dists/stable/**
+apt/gpg.key
+```
+
+A repository state with `.deb` files but missing any of the following is invalid:
+
+```text
+apt/dists/stable/main/binary-amd64/Packages.gz
+apt/dists/stable/main/binary-arm64/Packages.gz
+apt/dists/stable/Release
+apt/dists/stable/Release.gpg
+apt/dists/stable/InRelease
+apt/gpg.key
+```
+
+`validate-apt-repo.sh` intentionally fails in that state.
+
+## Validation
+
+Run:
+
 ```bash
 ./scripts/validate-apt-repo.sh
 ```
 
-### GPG Key Management
+The validation supports two modes:
 
-The repository requires a GPG key for signing metadata. The public key is expected at `apt/gpg.key`.
+```text
+BOOTSTRAP mode:
+  no .deb files are present
+  metadata checks are relaxed
 
-#### Generating a new key
-To rotate or generate a new key locally:
-```bash
-gpg --full-generate-key
-# Select RSA and RSA, 4096 bits, no expiration (or as required)
-# Note the generated <KEY_ID>
-
-# Export the public key
-gpg --armor --export <KEY_ID> > apt/gpg.key
-
-# Export the private key
-gpg --armor --export-secret-keys <KEY_ID> > apt-repo-private.asc
+RELEASE mode:
+  .deb files are present
+  signed APT metadata is required
 ```
 
-#### Important: Private Key Storage
-> [!CAUTION]
-> The `apt-repo-private.asc` file **must never be committed** to this repository. It should be securely stored or immediately discarded after adding it to GitHub Secrets.
+If packages are present, validation requires:
 
-The private key must be added as a GitHub Secret named `APT_GPG_PRIVATE_KEY` for use in CI workflows.
+```text
+apt/gpg.key
+apt/dists/stable/main/binary-amd64/Packages.gz
+apt/dists/stable/main/binary-arm64/Packages.gz
+apt/dists/stable/Release
+apt/dists/stable/Release.gpg
+apt/dists/stable/InRelease
+```
 
-### Required GitHub Settings
+## GitHub Actions
 
-To enable automated deployment, ensure the following GitHub settings are configured:
+### `Validate APT Repository`
 
-1. **GitHub Pages Deployment Source**:
-   `Settings -> Pages -> Build and deployment -> Source: GitHub Actions`
+Runs on push and pull request.
 
-2. **GitHub Actions Permissions**:
-   `Settings -> Actions -> General -> Workflow permissions -> Read and write permissions`
+It checks:
 
-### Required GitHub Secrets
+```text
+script syntax
+APT repository structure
+signed-by usage in install.sh
+absence of committed private keys
+```
 
-The following GitHub Action repository secrets must be set:
+### `Rebuild APT Repository`
 
-| Secret Name | Description |
-|---|---|
-| `APT_GPG_PRIVATE_KEY` | The armored GPG private key used for signing APT metadata. |
-| `APT_GPG_PASSPHRASE` | The passphrase for the GPG private key. |
+Runs manually or through `repository_dispatch`.
+
+It:
+
+```text
+downloads incoming .deb files when triggered by producer repositories
+writes apt/gpg.key from APT_GPG_PUBLIC_KEY
+rebuilds Packages and Packages.gz
+generates Release
+signs Release.gpg and InRelease
+validates the repository
+commits generated APT metadata
+```
+
+### `Deploy to GitHub Pages`
+
+Runs after changes land on `main`.
+
+It validates the repository and publishes only the prepared static site contents:
+
+```text
+apt/
+install.sh
+README.md
+```
+
+## Troubleshooting
+
+### `Packages.gz is missing`
+
+This means `.deb` files exist under `apt/pool/`, but APT metadata has not been rebuilt.
+
+Run:
+
+```text
+Actions -> Rebuild APT Repository -> Run workflow
+```
+
+### `Release.gpg` or `InRelease` is missing
+
+This means metadata was generated but not signed.
+
+Check that these secrets exist in `apply-the/packages`:
+
+```text
+APT_GPG_PRIVATE_KEY
+APT_GPG_PASSPHRASE
+```
+
+### `apt/gpg.key is missing`
+
+Check that `APT_GPG_PUBLIC_KEY` exists and that the rebuild workflow writes it to:
+
+```text
+apt/gpg.key
+```
+
+### `sudo apt update` cannot verify signatures
+
+Reinstall the repository key:
+
+```bash
+curl -fsSL https://apply-the.github.io/packages/apt/gpg.key \
+  | sudo gpg --dearmor -o /usr/share/keyrings/apply-the-archive-keyring.gpg
+
+sudo apt update
+```
+
+### Package not found
+
+Check that the package appears in the relevant package index:
+
+```bash
+curl -fsSL https://apply-the.github.io/packages/apt/dists/stable/main/binary-amd64/Packages.gz \
+  | gunzip \
+  | grep -A20 '^Package: boundline'
+```
+
+For `canon`:
+
+```bash
+curl -fsSL https://apply-the.github.io/packages/apt/dists/stable/main/binary-amd64/Packages.gz \
+  | gunzip \
+  | grep -A20 '^Package: canon'
+```
+
+## Security Notes
+
+Never commit private key material.
+
+The following file must never be committed:
+
+```text
+apt-repo-private.asc
+```
+
+The validation script also checks for committed private key material.
+
+Only the public key belongs in the repository or generated Pages site:
+
+```text
+apt/gpg.key
+```
