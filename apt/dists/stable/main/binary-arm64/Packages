@@ -1,0 +1,15 @@
+Package: canon
+Version: 0.72.1-1
+Architecture: arm64
+Maintainer: Apply The
+Installed-Size: 8202
+Depends: libc6:arm64 (>= 2.39)
+Filename: pool/main/c/canon/canon_0.72.1_arm64.deb
+Size: 1995680
+MD5sum: 5823bbdeaab5b5d3bf7688bf3e018caa
+SHA1: fdbe472bff89fb5ea4ec875a91167cc65607d435
+SHA256: 49b0529bfea48997f116c0059442e7d6582373fa163cffcb4d2cf74363a9b15a
+Priority: optional
+Description: [generated from Rust crate canon-cli]
+ Semantic governance runtime for AI-assisted engineering work.
+

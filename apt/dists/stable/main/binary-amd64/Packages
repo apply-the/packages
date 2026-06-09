@@ -1,0 +1,15 @@
+Package: canon
+Version: 0.72.1-1
+Architecture: amd64
+Maintainer: Apply The
+Installed-Size: 8785
+Depends: libc6 (>= 2.39)
+Filename: pool/main/c/canon/canon_0.72.1_amd64.deb
+Size: 2198944
+MD5sum: c24c38b563bd748ff96cd2de73f52969
+SHA1: 0d6f7646301b733efdbf915ec2aebedc0cfc112c
+SHA256: fff029dedbf79f662c0f506fdda2bfe5e2ee8baa61b2dc1ab4eaed1ab764f446
+Priority: optional
+Description: [generated from Rust crate canon-cli]
+ Semantic governance runtime for AI-assisted engineering work.
+

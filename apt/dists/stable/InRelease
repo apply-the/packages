@@ -1,0 +1,49 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Origin: Apply The
+Label: Apply The Packages
+Suite: stable
+Codename: stable
+Version: 1.0
+Architectures: amd64 arm64
+Components: main
+Description: Apply The open-source CLI packages
+Date: Tue, 09 Jun 2026 16:11:38 +0000
+MD5Sum:
+ d41d8cd98f00b204e9800998ecf8427e 0 main/binary-amd64/.gitkeep
+ 2a745fae449e27f6577680d587f13399 481 main/binary-amd64/Packages
+ 30355a61bd18721cf3dae22c65c63665 383 main/binary-amd64/Packages.gz
+ d41d8cd98f00b204e9800998ecf8427e 0 main/binary-arm64/.gitkeep
+ deb5209c44e854e7101b393639aabc05 487 main/binary-arm64/Packages
+ 7186b9f5b613f5310fc6001bc1263536 387 main/binary-arm64/Packages.gz
+SHA1:
+ da39a3ee5e6b4b0d3255bfef95601890afd80709 0 main/binary-amd64/.gitkeep
+ 27bb1e6172f24441c46d3e08d1e4b47b64ce6c96 481 main/binary-amd64/Packages
+ b95416e4e3d36264dd06ad55c52da44525ec8b00 383 main/binary-amd64/Packages.gz
+ da39a3ee5e6b4b0d3255bfef95601890afd80709 0 main/binary-arm64/.gitkeep
+ 7b7dbafe78b798d4392b61412fcb03d911b8feac 487 main/binary-arm64/Packages
+ 206c434207b99617b4896bf32c05dac1c2967eca 387 main/binary-arm64/Packages.gz
+SHA256:
+ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 0 main/binary-amd64/.gitkeep
+ 3318d5c09aaed96cd358092db2cebd901f49a98f07e122577f6f24919f297ec3 481 main/binary-amd64/Packages
+ 1ad574c395342b41ba40071812d18e5275a0879995d5ebaac270cd944e19d02b 383 main/binary-amd64/Packages.gz
+ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 0 main/binary-arm64/.gitkeep
+ 9ccd1338455b0f4da7a05ecad38966fde14b4454bdce74acbea0de8f6ba6cb2b 487 main/binary-arm64/Packages
+ 84ae6acac4fb9fde6702f9a6a0c77301f0674cfc16e53b95d4efbb276c2a86da 387 main/binary-arm64/Packages.gz
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCgAdFiEEYjgeKjX4a5NG7I3zuYNW11PupiYFAmooOzsACgkQuYNW11Pu
+piaCGRAAn0leA96vy15CYPdxwWRElxEU4gl35yIva6LVdRe3+ae77XYqMB7k8Ajc
+D+y8Y9HPoY9goz0KMqRbC6ArzZ3uUnQdOhHzCYlGqf4AHny110V26pp4L0xEUxn/
+fjxxCgYgic0ORkiZGl8hjS0KICeXj5MSk5krB7v8QLbe4OHhrhggv0oxjm5svqtg
+7HU4xxHQmRCv9ymod0VeXRjkCDQBjR5oFlFiyfAwFHZXKgNvTjnfAsm8dvxW+XAO
+sS+HSY4OEHOmQ6tUB3rsxIrABrEe83AAomdBdCGuCv5UKjkHdg8U0LsV8gTKxDT3
+nGD8mvXN22FsAiOIW6+RNt7I+H0apLYkKRclEXMddvpcr/ep5ysRQX477Meijg9g
+CLKSnLv56eRDHicb8cq4tnum2r4Hc6Gx+6dn0hHuJiHD8k7Hi6s8YSZfYJ6ha/vx
+PrLEvyXl1Sljv9/uz8gz0YnlG2tnUnmuPuQK6IhuE68xfrYkltS8qZi9ihUo8aY3
+2PRpBjVY+zocpGPjot5aBRVInoH61O4bSlIEsvigv5XR4CufS+BC1ZoUlW0MH60G
+um551wLLRJ/89I/b64YodTQ0HGS9iC0PLxmX7z2lui/mV7+osmjCXeaeQqmheCE8
+yRWc+M2nL4j7Y8UDKDdO2u+eI4ckLjPE7u/5fAY3S3qduEy63c8=
+=NW/s
+-----END PGP SIGNATURE-----
